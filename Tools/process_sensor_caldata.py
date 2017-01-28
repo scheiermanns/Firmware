@@ -82,28 +82,28 @@ def temperature_calibration(ulog_filename, do_plot):
     pdf_filename = "{:s}_temp_cal.pdf".format(
         ulog_filename.replace('.ulg',''))
 
-    # default for config
-    config = {
-        'fields': [],
-        'units': [],
-        'poly_deg': 3,
-        'xlabel': 'Temp, deg C',
-        'ylabel': '',
-        'min': lambda x: x.min(),
-        'max': lambda x: x.max(),
-        'ref': lambda x: (x.min() + x.max())/2,
-        'offset': lambda y: 0,
-        'save_plot': True,
-        'plot_interval': '5 s',
-    }
-
-    pdf = PdfPages(pdf_filename)
+   pdf = PdfPages(pdf_filename)
 
     for topic in r.keys():
         for multi_id in r[topic].keys():
 
             name = '{:s}_{:d}'.format(topic, multi_id)
             print('processing', name)
+
+            # default for config
+            config = {
+                'fields': [],
+                'units': [],
+                'poly_deg': 3,
+                'xlabel': 'Temp, deg C',
+                'ylabel': '',
+                'min': lambda x: x.min(),
+                'max': lambda x: x.max(),
+                'ref': lambda x: (x.min() + x.max())/2,
+                'offset': lambda y: 0,
+                'save_plot': True,
+                'plot_interval': '5 s',
+            }
 
             if topic == 'sensor_baro':
                 config['fields'] = ['altitude']
