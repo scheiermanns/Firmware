@@ -57,6 +57,7 @@ static const char sz_ver_gcc_str[] 	= "gcc";
 static const char sz_ver_all_str[] 	= "all";
 static const char mcu_ver_str[]		= "mcu";
 static const char mcu_uid_str[]         = "uid";
+static const char mfg_uid_str[]         = "mfguid";
 
 static void usage(const char *reason)
 {
@@ -64,7 +65,7 @@ static void usage(const char *reason)
 		printf("%s\n", reason);
 	}
 
-	printf("usage: ver {hw|hwcmp|git|bdate|gcc|all|mcu|uid|uri}\n\n");
+	printf("usage: ver {hw|hwcmp|git|bdate|gcc|all|mcu|mfguid|uid|uri}\n\n");
 }
 
 __EXPORT int ver_main(int argc, char *argv[]);
@@ -164,6 +165,18 @@ int ver_main(int argc, char *argv[])
 
 			}
 
+			if (show_all || !strncmp(argv[1], mcu_uid_str, sizeof(mfg_uid_str))) {
+
+#if defined(BOARD_OVERRIDE_MFGUID)
+				char *mfguid_fmt_buffer = BOARD_OVERRIDE_MFGUID;
+#else
+				char mfguid_fmt_buffer[PX4_CPU_MFGUID_FORMAT_SIZE];
+				board_get_mfguid_formated(mfguid_fmt_buffer, sizeof(mfguid_fmt_buffer));
+#endif
+				printf("MFGUID: %s\n", mfguid_fmt_buffer);
+				ret = 0;
+			}
+
 			if (show_all || !strncmp(argv[1], mcu_ver_str, sizeof(mcu_ver_str))) {
 
 				char rev = ' ';
@@ -200,7 +213,6 @@ int ver_main(int argc, char *argv[])
 				printf("UID: %s \n", uid_fmt_buffer);
 				ret = 0;
 			}
-
 
 			if (ret == 1) {
 				warn("unknown command.\n");
