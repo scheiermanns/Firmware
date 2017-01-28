@@ -198,7 +198,7 @@ typedef enum board_reset_e {
 	board_reset_enter_bootloader = 3   /* Perform a reset to the boot loader */
 } board_reset_e;
 
-/* Defined the types used for board UUID
+/* Defined the types used for board UUID and MFG UID
  *
  * A type suitable for holding the byte format of the UUID
  *
@@ -223,10 +223,17 @@ typedef enum board_reset_e {
  * For new targes it will be the opposit.
  *
  */
+
+/* A type suitable for defining the 8 bit format of the UUID */
 typedef uint8_t raw_uuid_byte_t[PX4_CPU_UUID_BYTE_LENGTH];
 
-/* A type suitable for defining the 32bit format of the UUID and reordering */
+/* A type suitable for defining the 32bit format of the UUID */
 typedef uint32_t raw_uuid_uint32_t[PX4_CPU_UUID_WORD32_LENGTH];
+
+/* A type suitable for defining the 8 bit format of the MFG UID
+ * This is always returned as MSD @ index 0 -LSD @ index PX4_CPU_MFGUID_BYTE_LENGTH-1
+ */
+typedef uint8_t mfguid_t[PX4_CPU_MFGUID_FORMAT_SIZE];
 
 /************************************************************************************
  * Private Functions
@@ -369,7 +376,7 @@ __EXPORT void board_get_uuid32(raw_uuid_uint32_t raw_uuid_words);
  *
  * Description:
  *   All boards either provide a way to retrieve a uuid and format it
- *   Or define BOARD_OVERRIDE_UUID
+ *   or define BOARD_OVERRIDE_UUID
  *   The format can optionally be reordered if PX4_CPU_UUID_WORD32_FORMAT_ORDER is
  *   defined and printed with the optional separator
  *
@@ -388,6 +395,32 @@ __EXPORT int board_get_uuid_formated32(char *format_buffer, int size,
 				       const char *format,
 				       const char *seperator);
 #endif // !defined(BOARD_OVERRIDE_UUID)
+
+#if !defined(BOARD_OVERRIDE_MFGUID)
+/************************************************************************************
+ * Name: board_get_mfguid
+ *
+ * Description:
+ *   All boards either provide a way to retrieve a manafactuers Uniqe ID or
+ *   define BOARD_OVERRIDE_MFGUID.
+ *    The MFGUID is returned as an array of bytes in
+ *    MSD @ index 0 - LSD @ index PX4_CPU_MFGUID_BYTE_LENGTH-1
+ *
+ ************************************************************************************/
+
+int board_get_mfguid(mfguid_t mfgid);
+
+/************************************************************************************
+ * Name: board_get_mfguid_formated
+ *
+ * Description:
+ *   All boards either provide a way to retrieve a formatted string of the
+ *   manafactuers Uniqe ID or define BOARD_OVERRIDE_MFGUID
+ *
+ ************************************************************************************/
+
+int board_get_mfguid_formated(char *format_buffer, int size);
+#endif // !defined(BOARD_OVERRIDE_MFGUID)
 
 /************************************************************************************
  * Name: board_mcu_version

@@ -46,6 +46,7 @@
 typedef const uint8_t uuid_uint8_reorder_t[PX4_CPU_UUID_BYTE_LENGTH];
 typedef const uint8_t raw_uuid_uint32_reorder_t[PX4_CPU_UUID_WORD32_LENGTH];
 
+#define SWAP_UINT32(x) (((x) >> 24) | (((x) & 0x00ff0000) >> 8) | (((x) & 0x0000ff00) << 8) | ((x) << 24))
 
 void board_get_uuid_raw(raw_uuid_byte_t *raw_uuid)
 {
@@ -96,4 +97,30 @@ int board_get_uuid_formated32(char *format_buffer, int size,
 	}
 
 	return 0;
+}
+
+int board_get_mfguid(mfguid_t mfgid)
+{
+	uint32_t *chip_uuid = (uint32_t *) STM32_SYSMEM_UID;
+	uint32_t  *rv = (uint32_t *) &mfgid[0];
+
+	for (int i = 0; i < PX4_CPU_UUID_WORD32_LENGTH; i++) {
+		*rv++ = SWAP_UINT32(chip_uuid[(PX4_CPU_UUID_WORD32_LENGTH - 1) - i]);
+	}
+
+	return PX4_CPU_MFGUID_BYTE_LENGTH;
+}
+
+int board_get_mfguid_formated(char *format_buffer, int size)
+{
+	mfguid_t mfguid;
+
+	board_get_mfguid(mfguid);
+	int offset  = 0;
+
+	for (unsigned int i = 0; i < PX4_CPU_MFGUID_BYTE_LENGTH; i++) {
+		offset += snprintf(&format_buffer[offset], size - offset, "%02x" , mfguid[i]);
+	}
+
+	return offset;
 }

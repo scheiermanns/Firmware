@@ -77,6 +77,7 @@ __BEGIN_DECLS
  *      IJKL EFGH ABCD
  */
 #    define PX4_CPU_UUID_BYTE_LENGTH                12
+#    define PX4_CPU_MFGUID_BYTE_LENGTH              PX4_CPU_UUID_BYTE_LENGTH
 #    define PX4_CPU_UUID_BYTE_FORMAT_ORDER          {3, 2, 1, 0, 7, 6, 5, 4, 11, 10, 9, 8}
 #    define PX4_CPU_UUID_WORD32_LENGTH              (PX4_CPU_UUID_BYTE_LENGTH/sizeof(uint32_t))
 
@@ -94,8 +95,9 @@ __BEGIN_DECLS
 #    define PX4_CPU_UUID_WORD32_UNIQUE_M            1 /* Middle significant digits */
 #    define PX4_CPU_UUID_WORD32_UNIQUE_L            0 /* Least significant digits change the most */
 #  endif
-
-#    define PX4_CPU_UUID_WORD32_FORMAT_SIZE         (PX4_CPU_UUID_WORD32_LENGTH-1+(2*PX4_CPU_UUID_BYTE_LENGTH))
+/*                                                  Separator    nnn:nnn:nnnn 2 char per byte             term*/
+#    define PX4_CPU_UUID_WORD32_FORMAT_SIZE         (PX4_CPU_UUID_WORD32_LENGTH-1+(2*PX4_CPU_UUID_BYTE_LENGTH)+1)
+#    define PX4_CPU_MFGUID_FORMAT_SIZE              ((2*PX4_CPU_MFGUID_BYTE_LENGTH)+1)
 
 #    define px4_spibus_initialize(port_1based)       stm32_spibus_initialize(port_1based)
 
