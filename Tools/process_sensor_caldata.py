@@ -82,7 +82,7 @@ def temperature_calibration(ulog_filename, do_plot):
     pdf_filename = "{:s}_temp_cal.pdf".format(
         ulog_filename.replace('.ulg',''))
 
-   pdf = PdfPages(pdf_filename)
+    pdf = PdfPages(pdf_filename)
 
     for topic in r.keys():
         for multi_id in r[topic].keys():
