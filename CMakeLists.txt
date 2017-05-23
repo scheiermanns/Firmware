@@ -154,6 +154,10 @@ set(THREADS "4" CACHE STRING "number of threads to use for external build proces
 set(DEBUG_PORT "/dev/ttyACM0" CACHE STRING "debugging port")
 set(EXTERNAL_MODULES_LOCATION "" CACHE STRING "External modules source location")
 
+if(NOT EXTERNAL_MODULES_LOCATION STREQUAL "")
+	get_filename_component(EXTERNAL_MODULES_LOCATION "${EXTERNAL_MODULES_LOCATION}" ABSOLUTE)
+endif()
+
 #=============================================================================
 # configuration
 #
@@ -273,6 +277,7 @@ if (CATKIN_DEVEL_PREFIX)
 endif()
 
 find_package(PythonInterp REQUIRED)
+px4_find_python_module(jinja2 REQUIRED)
 
 #=============================================================================
 # cmake testing
@@ -401,7 +406,7 @@ px4_generate_messages(TARGET msg_gen
 	)
 px4_generate_parameters_xml(OUT parameters.xml 
 	BOARD ${BOARD}
-	SCOPE ${PX4_SOURCE_DIR}/cmake/configs/${OS}_${BOARD}_${LABEL}.cmake
+	MODULES ${config_module_list}
 	OVERRIDES ${PARAM_DEFAULT_OVERRIDES})
 px4_generate_airframes_xml(OUT airframes.xml BOARD ${BOARD})
 add_custom_target(xml_gen

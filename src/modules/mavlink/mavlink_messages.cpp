@@ -61,6 +61,7 @@
 #include <uORB/topics/att_pos_mocap.h>
 #include <uORB/topics/battery_status.h>
 #include <uORB/topics/camera_trigger.h>
+#include <uORB/topics/camera_capture.h>
 #include <uORB/topics/cpuload.h>
 #include <uORB/topics/debug_key_value.h>
 #include <uORB/topics/differential_pressure.h>
@@ -318,7 +319,7 @@ protected:
 
 	void send(const hrt_abstime t)
 	{
-		struct vehicle_status_s status;
+		struct vehicle_status_s status = {};
 
 		/* always send the heartbeat, independent of the update status of the topics */
 		if (!_status_sub->update(&status)) {
@@ -400,11 +401,11 @@ protected:
 	{
 		if (!_mavlink->get_logbuffer()->empty()) {
 
-			struct mavlink_log_s mavlink_log;
+			struct mavlink_log_s mavlink_log = {};
 
 			if (_mavlink->get_logbuffer()->get(&mavlink_log)) {
 
-				mavlink_statustext_t msg;
+				mavlink_statustext_t msg = {};
 				msg.severity = mavlink_log.severity;
 				strncpy(msg.text, (const char *)mavlink_log.text, sizeof(msg.text));
 				msg.text[sizeof(msg.text) - 1] = '\0';
@@ -419,7 +420,7 @@ protected:
 				timespec ts;
 				px4_clock_gettime(CLOCK_REALTIME, &ts);
 				time_t gps_time_sec = ts.tv_sec + (ts.tv_nsec / 1e9);
-				struct tm tt;
+				struct tm tt = {};
 				gmtime_r(&gps_time_sec, &tt);
 				char tstamp[22];
 				strftime(tstamp, sizeof(tstamp) - 1, "%Y_%m_%d_%H_%M_%S", &tt);
@@ -530,12 +531,12 @@ protected:
 
 	void send(const hrt_abstime t)
 	{
-		struct vehicle_command_s cmd;
+		struct vehicle_command_s cmd = {};
 
 		if (_cmd_sub->update(&_cmd_time, &cmd)) {
 			/* only send commands for other systems/components */
 			if (cmd.target_system != mavlink_system.sysid || cmd.target_component != mavlink_system.compid) {
-				mavlink_command_long_t msg;
+				mavlink_command_long_t msg = {};
 
 				msg.target_system = cmd.target_system;
 				msg.target_component = cmd.target_component;
@@ -624,7 +625,7 @@ protected:
 		}
 
 		if (updated_status || updated_battery || updated_cpuload) {
-			mavlink_sys_status_t msg;
+			mavlink_sys_status_t msg = {};
 
 			msg.onboard_control_sensors_present = status.onboard_control_sensors_present;
 			msg.onboard_control_sensors_enabled = status.onboard_control_sensors_enabled;
@@ -732,8 +733,8 @@ protected:
 
 	void send(const hrt_abstime t)
 	{
-		struct sensor_combined_s sensor;
-		struct differential_pressure_s differential_pressure;
+		struct sensor_combined_s sensor = {};
+		struct differential_pressure_s differential_pressure = {};
 
 		if (_sensor_sub->update(&_sensor_time, &sensor)) {
 			uint16_t fields_updated = 0;
@@ -764,7 +765,7 @@ protected:
 
 			_differential_pressure_sub->update(&_differential_pressure_time, &differential_pressure);
 
-			mavlink_highres_imu_t msg;
+			mavlink_highres_imu_t msg = {};
 
 			msg.time_usec = sensor.timestamp;
 			msg.xacc = sensor.accelerometer_m_s2[0];
@@ -841,7 +842,7 @@ protected:
 		struct vehicle_attitude_s att;
 
 		if (_att_sub->update(&_att_time, &att)) {
-			mavlink_attitude_t msg;
+			mavlink_attitude_t msg = {};
 			matrix::Eulerf euler = matrix::Quatf(att.q);
 			msg.time_boot_ms = att.timestamp / 1000;
 			msg.roll = euler.phi();
@@ -909,7 +910,7 @@ protected:
 		struct vehicle_attitude_s att;
 
 		if (_att_sub->update(&_att_time, &att)) {
-			mavlink_attitude_quaternion_t msg;
+			mavlink_attitude_quaternion_t msg = {};
 
 			msg.time_boot_ms = att.timestamp / 1000;
 			msg.q1 = att.q[0];
@@ -970,8 +971,11 @@ private:
 	MavlinkOrbSubscription *_armed_sub;
 	uint64_t _armed_time;
 
-	MavlinkOrbSubscription *_act_sub;
-	uint64_t _act_time;
+	MavlinkOrbSubscription *_act0_sub;
+	uint64_t _act0_time;
+
+	MavlinkOrbSubscription *_act1_sub;
+	uint64_t _act1_time;
 
 	MavlinkOrbSubscription *_airspeed_sub;
 	uint64_t _airspeed_time;
@@ -991,8 +995,10 @@ protected:
 		_pos_time(0),
 		_armed_sub(_mavlink->add_orb_subscription(ORB_ID(actuator_armed))),
 		_armed_time(0),
-		_act_sub(_mavlink->add_orb_subscription(ORB_ID(actuator_controls_0))),
-		_act_time(0),
+		_act0_sub(_mavlink->add_orb_subscription(ORB_ID(actuator_controls_0))),
+		_act0_time(0),
+		_act1_sub(_mavlink->add_orb_subscription(ORB_ID(actuator_controls_1))),
+		_act1_time(0),
 		_airspeed_sub(_mavlink->add_orb_subscription(ORB_ID(airspeed))),
 		_airspeed_time(0),
 		_sensor_sub(_mavlink->add_orb_subscription(ORB_ID(sensor_combined))),
@@ -1004,22 +1010,36 @@ protected:
 		struct vehicle_attitude_s att = {};
 		struct vehicle_global_position_s pos = {};
 		struct actuator_armed_s armed = {};
-		struct actuator_controls_s act = {};
 		struct airspeed_s airspeed = {};
+		struct actuator_controls_s act0 = {};
+		struct actuator_controls_s act1 = {};
 
 		bool updated = _att_sub->update(&_att_time, &att);
 		updated |= _pos_sub->update(&_pos_time, &pos);
 		updated |= _armed_sub->update(&_armed_time, &armed);
-		updated |= _act_sub->update(&_act_time, &act);
 		updated |= _airspeed_sub->update(&_airspeed_time, &airspeed);
+		updated |= _act0_sub->update(&_act0_time, &act0);
+		updated |= _act1_sub->update(&_act1_time, &act1);
 
 		if (updated) {
-			mavlink_vfr_hud_t msg;
+			mavlink_vfr_hud_t msg = {};
 			matrix::Eulerf euler = matrix::Quatf(att.q);
 			msg.airspeed = airspeed.indicated_airspeed_m_s;
 			msg.groundspeed = sqrtf(pos.vel_n * pos.vel_n + pos.vel_e * pos.vel_e);
 			msg.heading = _wrap_2pi(euler.psi()) * M_RAD_TO_DEG_F;
-			msg.throttle = armed.armed ? act.control[3] * 100.0f : 0.0f;
+
+			if (armed.armed) {
+				// VFR_HUD throttle should only be used for operator feedback.
+				// VTOLs switch between actuator_controls_0 and actuator_controls_1. During transition there isn't a
+				// a single throttle value, but this should still be a useful heuristic for operator awareness.
+				//
+				// Use ACTUATOR_CONTROL_TARGET if accurate states are needed.
+				msg.throttle = 100 * math::max(act0.control[actuator_controls_s::INDEX_THROTTLE],
+							       act1.control[actuator_controls_s::INDEX_THROTTLE]);
+
+			} else {
+				msg.throttle = 0.0f;
+			}
 
 			if (_pos_time > 0) {
 				/* use global estimate */
@@ -1154,7 +1174,7 @@ protected:
 
 	void send(const hrt_abstime t)
 	{
-		mavlink_system_time_t msg;
+		mavlink_system_time_t msg = {};
 		timespec tv;
 
 		px4_clock_gettime(CLOCK_REALTIME, &tv);
@@ -1210,7 +1230,7 @@ protected:
 
 	void send(const hrt_abstime t)
 	{
-		mavlink_timesync_t msg;
+		mavlink_timesync_t msg = {};
 
 		msg.tc1 = 0;
 		msg.ts1 = hrt_absolute_time() * 1000; // boot time in nanoseconds
@@ -1387,6 +1407,11 @@ public:
 		return new MavlinkStreamCameraTrigger(mavlink);
 	}
 
+	virtual bool const_rate()
+	{
+		return true;
+	}
+
 	unsigned get_size()
 	{
 		return (_trigger_time > 0) ? MAVLINK_MSG_ID_CAMERA_TRIGGER_LEN + MAVLINK_NUM_NON_PAYLOAD_BYTES : 0;
@@ -1411,7 +1436,7 @@ protected:
 		struct camera_trigger_s trigger;
 
 		if (_trigger_sub->update(&_trigger_time, &trigger)) {
-			mavlink_camera_trigger_t msg;
+			mavlink_camera_trigger_t msg = {};
 
 			msg.time_usec = trigger.timestamp;
 			msg.seq = trigger.seq;
@@ -1427,16 +1452,113 @@ protected:
 				msg_cmd.target_component = MAV_COMP_ID_CAMERA;
 				msg_cmd.command = MAV_CMD_IMAGE_START_CAPTURE;
 				msg_cmd.confirmation = 0;
-				msg_cmd.param1 = 0;
-				msg_cmd.param2 = 1;
-				msg_cmd.param3 = 0;
+				msg_cmd.param1 = 0; // duration between 2 consecutive images (seconds)
+				msg_cmd.param2 = 1; // take 1 picture
+				msg_cmd.param3 = -1; // resolution (use the highest possible)
 				msg_cmd.param4 = NAN;
 				msg_cmd.param5 = NAN;
 				msg_cmd.param6 = NAN;
 				msg_cmd.param7 = NAN;
 
 				mavlink_msg_command_long_send_struct(_mavlink->get_channel(), &msg_cmd);
+
+				/* send MAV_CMD_DO_DIGICAM_CONTROL*/
+				mavlink_command_long_t digicam_ctrl_cmd;
+
+				digicam_ctrl_cmd.target_system = 0; // 0 for broadcast
+				digicam_ctrl_cmd.target_component = MAV_COMP_ID_CAMERA;
+				digicam_ctrl_cmd.command = MAV_CMD_DO_DIGICAM_CONTROL;
+				digicam_ctrl_cmd.confirmation = 0;
+				digicam_ctrl_cmd.param1 = NAN;
+				digicam_ctrl_cmd.param2 = NAN;
+				digicam_ctrl_cmd.param3 = NAN;
+				digicam_ctrl_cmd.param4 = NAN;
+				digicam_ctrl_cmd.param5 = 1;   // take 1 picture
+				digicam_ctrl_cmd.param6 = NAN;
+				digicam_ctrl_cmd.param7 = NAN;
+
+				mavlink_msg_command_long_send_struct(_mavlink->get_channel(), &digicam_ctrl_cmd);
 			}
+		}
+	}
+};
+
+class MavlinkStreamCameraImageCaptured : public MavlinkStream
+{
+public:
+	const char *get_name() const
+	{
+		return MavlinkStreamCameraImageCaptured::get_name_static();
+	}
+
+	static const char *get_name_static()
+	{
+		return "CAMERA_IMAGE_CAPTURED";
+	}
+
+	static uint16_t get_id_static()
+	{
+		return MAVLINK_MSG_ID_CAMERA_IMAGE_CAPTURED;
+	}
+
+	uint16_t get_id()
+	{
+		return get_id_static();
+	}
+
+	bool const_rate()
+	{
+		return true;
+	}
+
+	static MavlinkStream *new_instance(Mavlink *mavlink)
+	{
+		return new MavlinkStreamCameraImageCaptured(mavlink);
+	}
+
+	unsigned get_size()
+	{
+		return (_capture_time > 0) ? MAVLINK_MSG_ID_CAMERA_IMAGE_CAPTURED_LEN + MAVLINK_NUM_NON_PAYLOAD_BYTES : 0;
+	}
+
+private:
+	MavlinkOrbSubscription *_capture_sub;
+	uint64_t _capture_time;
+
+	/* do not allow top copying this class */
+	MavlinkStreamCameraImageCaptured(MavlinkStreamCameraImageCaptured &);
+	MavlinkStreamCameraImageCaptured &operator = (const MavlinkStreamCameraImageCaptured &);
+
+protected:
+	explicit MavlinkStreamCameraImageCaptured(Mavlink *mavlink) : MavlinkStream(mavlink),
+		_capture_sub(_mavlink->add_orb_subscription(ORB_ID(camera_capture))),
+		_capture_time(0)
+	{}
+
+	void send(const hrt_abstime t)
+	{
+		struct camera_capture_s capture;
+
+		if (_capture_sub->update(&_capture_time, &capture)) {
+
+			mavlink_camera_image_captured_t msg;
+
+			msg.time_boot_ms = capture.timestamp / 1000;
+			msg.time_utc = capture.timestamp_utc;
+			msg.camera_id = 1;	// FIXME : get this from uORB
+			msg.lat = capture.lat * 1e7;
+			msg.lon = capture.lon * 1e7;
+			msg.alt = capture.alt * 1e3f;
+			msg.relative_alt = capture.ground_distance * 1e3f;
+			msg.q[0] = capture.q[0];
+			msg.q[1] = capture.q[1];
+			msg.q[2] = capture.q[2];
+			msg.q[3] = capture.q[3];
+			msg.image_index = capture.seq;
+			msg.capture_result = capture.result;
+			msg.file_url[0] = '\0';
+
+			mavlink_msg_camera_image_captured_send_struct(_mavlink->get_channel(), &msg);
 		}
 	}
 };
@@ -1502,7 +1624,7 @@ protected:
 		updated |= _home_sub->update(&_home_time, &home);
 
 		if (updated) {
-			mavlink_global_position_int_t msg;
+			mavlink_global_position_int_t msg = {};
 
 			msg.time_boot_ms = pos.timestamp / 1000;
 			msg.lat = pos.lat * 1e7;
@@ -1580,7 +1702,7 @@ protected:
 		bool pos_updated = _pos_sub->update(&_pos_time, &vpos);
 
 		if (pos_updated || att_updated) {
-			mavlink_vision_position_estimate_t vmsg;
+			mavlink_vision_position_estimate_t vmsg = {};
 			vmsg.usec = vpos.timestamp;
 			vmsg.x = vpos.x;
 			vmsg.y = vpos.y;
@@ -1648,7 +1770,7 @@ protected:
 		struct vehicle_local_position_s pos;
 
 		if (_pos_sub->update(&_pos_time, &pos)) {
-			mavlink_local_position_ned_t msg;
+			mavlink_local_position_ned_t msg = {};
 
 			msg.time_boot_ms = pos.timestamp / 1000;
 			msg.x = pos.x;
@@ -1875,7 +1997,7 @@ protected:
 		struct att_pos_mocap_s mocap;
 
 		if (_mocap_sub->update(&_mocap_time, &mocap)) {
-			mavlink_att_pos_mocap_t msg;
+			mavlink_att_pos_mocap_t msg = {};
 
 			msg.time_usec = mocap.timestamp;
 			msg.q[0] = mocap.q[0];
@@ -1945,7 +2067,7 @@ protected:
 			struct home_position_s home;
 
 			if (_home_sub->update(&home)) {
-				mavlink_home_position_t msg;
+				mavlink_home_position_t msg = {};
 
 				msg.latitude = home.lat * 1e7;
 				msg.longitude = home.lon * 1e7;
@@ -2041,7 +2163,7 @@ protected:
 		struct actuator_outputs_s act;
 
 		if (_act_sub->update(&_act_time, &act)) {
-			mavlink_servo_output_raw_t msg;
+			mavlink_servo_output_raw_t msg = {};
 
 			msg.time_usec = act.timestamp;
 			msg.port = N;
@@ -2143,7 +2265,7 @@ protected:
 		struct actuator_controls_s att_ctrl;
 
 		if (_att_ctrl_sub->update(&_att_ctrl_time, &att_ctrl)) {
-			mavlink_actuator_control_target_t msg;
+			mavlink_actuator_control_target_t msg = {};
 
 			msg.time_usec = att_ctrl.timestamp;
 			msg.group_mlx = N;
@@ -2268,7 +2390,7 @@ protected:
 				for (unsigned i = 0; i < 8; i++) {
 					if (act.output[i] > PWM_DEFAULT_MIN / 2) {
 						if (i < n) {
-							/* scale PWM out PWM_DEFAULT_MIN..PWM_DEFAULT_MAX us to -1..1 for rotors */
+							/* scale PWM out PWM_DEFAULT_MIN..PWM_DEFAULT_MAX us to 0..1 for rotors */
 							out[i] = (act.output[i] - PWM_DEFAULT_MIN) / (PWM_DEFAULT_MAX - PWM_DEFAULT_MIN);
 
 						} else {
@@ -2303,7 +2425,7 @@ protected:
 				}
 			}
 
-			mavlink_hil_controls_t msg;
+			mavlink_hil_controls_t msg = {};
 
 			msg.time_usec = hrt_absolute_time();
 			msg.roll_ailerons = out[0];
@@ -2387,7 +2509,7 @@ protected:
 			uint8_t mavlink_state;
 			uint8_t mavlink_base_mode;
 			uint32_t mavlink_custom_mode;
-			mavlink_hil_actuator_controls_t msg;
+			mavlink_hil_actuator_controls_t msg = {};
 
 			get_mavlink_mode_state(&status, &mavlink_state, &mavlink_base_mode, &mavlink_custom_mode);
 
@@ -2530,7 +2652,7 @@ protected:
 		struct position_setpoint_triplet_s pos_sp_triplet;
 
 		if (_pos_sp_triplet_sub->update(&pos_sp_triplet)) {
-			mavlink_position_target_global_int_t msg{};
+			mavlink_position_target_global_int_t msg = {};
 
 			msg.time_boot_ms = hrt_absolute_time() / 1000;
 			msg.coordinate_frame = MAV_FRAME_GLOBAL;
@@ -2596,7 +2718,7 @@ protected:
 		struct vehicle_local_position_setpoint_s pos_sp;
 
 		if (_pos_sp_sub->update(&_pos_sp_time, &pos_sp)) {
-			mavlink_position_target_local_ned_t msg{};
+			mavlink_position_target_local_ned_t msg = {};
 
 			msg.time_boot_ms = pos_sp.timestamp / 1000;
 			msg.coordinate_frame = MAV_FRAME_LOCAL_NED;
@@ -2670,14 +2792,14 @@ protected:
 
 	void send(const hrt_abstime t)
 	{
-		struct vehicle_attitude_setpoint_s att_sp;
+		struct vehicle_attitude_setpoint_s att_sp = {};
 
 		if (_att_sp_sub->update(&_att_sp_time, &att_sp)) {
 
-			struct vehicle_rates_setpoint_s att_rates_sp;
+			struct vehicle_rates_setpoint_s att_rates_sp = {};
 			(void)_att_rates_sp_sub->update(&_att_rates_sp_time, &att_rates_sp);
 
-			mavlink_attitude_target_t msg{};
+			mavlink_attitude_target_t msg = {};
 
 			msg.time_boot_ms = att_sp.timestamp / 1000;
 
@@ -2749,12 +2871,12 @@ protected:
 
 	void send(const hrt_abstime t)
 	{
-		struct rc_input_values rc;
+		struct rc_input_values rc = {};
 
 		if (_rc_sub->update(&_rc_time, &rc)) {
 
 			/* send RC channel data and RSSI */
-			mavlink_rc_channels_t msg;
+			mavlink_rc_channels_t msg = {};
 
 			msg.time_boot_ms = rc.timestamp / 1000;
 			msg.chancount = rc.channel_count;
@@ -2850,10 +2972,10 @@ protected:
 
 	void send(const hrt_abstime t)
 	{
-		struct manual_control_setpoint_s manual;
+		struct manual_control_setpoint_s manual = {};
 
 		if (_manual_sub->update(&_manual_time, &manual)) {
-			mavlink_manual_control_t msg;
+			mavlink_manual_control_t msg = {};
 
 			msg.target = mavlink_system.sysid;
 			msg.x = manual.x * 1000;
@@ -2923,10 +3045,10 @@ protected:
 
 	void send(const hrt_abstime t)
 	{
-		struct optical_flow_s flow;
+		struct optical_flow_s flow = {};
 
 		if (_flow_sub->update(&_flow_time, &flow)) {
-			mavlink_optical_flow_rad_t msg;
+			mavlink_optical_flow_rad_t msg = {};
 
 			msg.time_usec = flow.timestamp;
 			msg.sensor_id = flow.sensor_id;
@@ -2996,10 +3118,10 @@ protected:
 
 	void send(const hrt_abstime t)
 	{
-		struct debug_key_value_s debug;
+		struct debug_key_value_s debug = {};
 
 		if (_debug_sub->update(&_debug_time, &debug)) {
-			mavlink_named_value_float_t msg;
+			mavlink_named_value_float_t msg = {};
 
 			msg.time_boot_ms = debug.timestamp_ms;
 			memcpy(msg.name, debug.key, sizeof(msg.name));
@@ -3135,9 +3257,9 @@ protected:
 		struct vehicle_status_s status = {};
 		(void)_status_sub->update(&status);
 
-		mavlink_command_long_t msg;
+		mavlink_command_long_t msg = {};
 
-		msg.target_system = mavlink_system.sysid;
+		msg.target_system = 0;
 		msg.target_component = MAV_COMP_ID_ALL;
 		msg.command = MAV_CMD_DO_CONTROL_VIDEO;
 		msg.confirmation = 0;
@@ -3204,11 +3326,11 @@ protected:
 
 	void send(const hrt_abstime t)
 	{
-		struct distance_sensor_s dist_sensor;
+		struct distance_sensor_s dist_sensor = {};
 
 		if (_distance_sensor_sub->update(&_dist_sensor_time, &dist_sensor)) {
 
-			mavlink_distance_sensor_t msg;
+			mavlink_distance_sensor_t msg = {};
 
 			msg.time_boot_ms = dist_sensor.timestamp / 1000; /* us to ms */
 
@@ -3280,6 +3402,8 @@ public:
 private:
 	MavlinkOrbSubscription *_status_sub;
 	MavlinkOrbSubscription *_landed_sub;
+	MavlinkOrbSubscription *_pos_sp_triplet_sub;
+	MavlinkOrbSubscription *_control_mode_sub;
 	mavlink_extended_sys_state_t _msg;
 
 	/* do not allow top copying this class */
@@ -3290,17 +3414,18 @@ protected:
 	explicit MavlinkStreamExtendedSysState(Mavlink *mavlink) : MavlinkStream(mavlink),
 		_status_sub(_mavlink->add_orb_subscription(ORB_ID(vehicle_status))),
 		_landed_sub(_mavlink->add_orb_subscription(ORB_ID(vehicle_land_detected))),
-		_msg{}
+		_pos_sp_triplet_sub(_mavlink->add_orb_subscription(ORB_ID(position_setpoint_triplet))),
+		_control_mode_sub(_mavlink->add_orb_subscription(ORB_ID(vehicle_control_mode))),
+		_msg()
 	{
-
 		_msg.vtol_state = MAV_VTOL_STATE_UNDEFINED;
 		_msg.landed_state = MAV_LANDED_STATE_UNDEFINED;
 	}
 
 	void send(const hrt_abstime t)
 	{
-		struct vehicle_status_s status;
-		struct vehicle_land_detected_s land_detected;
+		struct vehicle_status_s status = {};
+		struct vehicle_land_detected_s land_detected = {};
 		bool updated = false;
 
 		if (_status_sub->update(&status)) {
@@ -3328,8 +3453,25 @@ protected:
 			if (land_detected.landed) {
 				_msg.landed_state = MAV_LANDED_STATE_ON_GROUND;
 
-			} else {
+			} else if (!land_detected.landed) {
 				_msg.landed_state = MAV_LANDED_STATE_IN_AIR;
+
+				vehicle_control_mode_s control_mode = {};
+				position_setpoint_triplet_s pos_sp_triplet = {};
+
+				if (_control_mode_sub->update(&control_mode) && _pos_sp_triplet_sub->update(&pos_sp_triplet)) {
+					if (control_mode.flag_control_auto_enabled && pos_sp_triplet.current.valid) {
+						if (pos_sp_triplet.current.type == position_setpoint_s::SETPOINT_TYPE_TAKEOFF) {
+							_msg.landed_state = MAV_LANDED_STATE_TAKEOFF;
+
+						} else if (pos_sp_triplet.current.type == position_setpoint_s::SETPOINT_TYPE_LAND) {
+							_msg.landed_state = MAV_LANDED_STATE_LANDING;
+						}
+					}
+				}
+
+			} else {
+				_msg.landed_state = MAV_LANDED_STATE_UNDEFINED;
 			}
 		}
 
@@ -3403,7 +3545,7 @@ protected:
 
 	void send(const hrt_abstime t)
 	{
-		mavlink_altitude_t msg;
+		mavlink_altitude_t msg = {};
 		bool updated = false;
 		float global_alt = 0.0f;
 
@@ -3448,7 +3590,7 @@ protected:
 		}
 
 		{
-			struct home_position_s home;
+			struct home_position_s home = {};
 			updated |= _home_sub->update(&_home_time, &home);
 
 			if (_global_pos_time > 0 && _home_time > 0) {
@@ -3467,7 +3609,7 @@ protected:
 			msg.time_usec = hrt_absolute_time();
 
 			{
-				struct sensor_combined_s sensor;
+				struct sensor_combined_s sensor = {};
 				(void)_sensor_sub->update(&_sensor_time, &sensor);
 				msg.altitude_monotonic = (_sensor_time > 0) ? sensor.baro_alt_meter : NAN;
 			}
@@ -3548,7 +3690,7 @@ protected:
 			msg.var_horiz = wind_estimate.covariance_north + wind_estimate.covariance_east;
 			msg.var_vert = 0.0f;
 
-			struct vehicle_global_position_s global_pos;
+			struct vehicle_global_position_s global_pos = {};
 			_global_pos_sub->update(&_global_pos_time, &global_pos);
 			msg.wind_alt = (_global_pos_time > 0) ? global_pos.alt : NAN;
 
@@ -3966,6 +4108,7 @@ const StreamListItem *streams_list[] = {
 	new StreamListItem(&MavlinkStreamNavControllerOutput::new_instance, &MavlinkStreamNavControllerOutput::get_name_static, &MavlinkStreamNavControllerOutput::get_id_static),
 	new StreamListItem(&MavlinkStreamCameraCapture::new_instance, &MavlinkStreamCameraCapture::get_name_static, &MavlinkStreamCameraCapture::get_id_static),
 	new StreamListItem(&MavlinkStreamCameraTrigger::new_instance, &MavlinkStreamCameraTrigger::get_name_static, &MavlinkStreamCameraTrigger::get_id_static),
+	new StreamListItem(&MavlinkStreamCameraImageCaptured::new_instance, &MavlinkStreamCameraImageCaptured::get_name_static, &MavlinkStreamCameraImageCaptured::get_id_static),
 	new StreamListItem(&MavlinkStreamDistanceSensor::new_instance, &MavlinkStreamDistanceSensor::get_name_static, &MavlinkStreamDistanceSensor::get_id_static),
 	new StreamListItem(&MavlinkStreamExtendedSysState::new_instance, &MavlinkStreamExtendedSysState::get_name_static, &MavlinkStreamExtendedSysState::get_id_static),
 	new StreamListItem(&MavlinkStreamAltitude::new_instance, &MavlinkStreamAltitude::get_name_static, &MavlinkStreamAltitude::get_id_static),

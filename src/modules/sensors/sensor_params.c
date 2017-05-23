@@ -667,6 +667,103 @@ PARAM_DEFINE_FLOAT(CAL_ACC2_YSCALE, 1.0f);
 PARAM_DEFINE_FLOAT(CAL_ACC2_ZSCALE, 1.0f);
 
 /**
+ * ID of Magnetometer the calibration is for.
+ *
+ * @group Sensor Calibration
+ */
+PARAM_DEFINE_INT32(CAL_MAG3_ID, 0);
+
+/**
+ * Rotation of magnetometer 2 relative to airframe.
+ *
+ * An internal magnetometer will force a value of -1, so a GCS
+ * should only attempt to configure the rotation if the value is
+ * greater than or equal to zero.
+ *
+ * @value -1 Internal mag
+ * @value 0 No rotation
+ * @value 1 Yaw 45°
+ * @value 2 Yaw 90°
+ * @value 3 Yaw 135°
+ * @value 4 Yaw 180°
+ * @value 5 Yaw 225°
+ * @value 6 Yaw 270°
+ * @value 7 Yaw 315°
+ * @value 8 Roll 180°
+ * @value 9 Roll 180°, Yaw 45°
+ * @value 10 Roll 180°, Yaw 90°
+ * @value 11 Roll 180°, Yaw 135°
+ * @value 12 Pitch 180°
+ * @value 13 Roll 180°, Yaw 225°
+ * @value 14 Roll 180°, Yaw 270°
+ * @value 15 Roll 180°, Yaw 315°
+ * @value 16 Roll 90°
+ * @value 17 Roll 90°, Yaw 45°
+ * @value 18 Roll 90°, Yaw 90°
+ * @value 19 Roll 90°, Yaw 135°
+ * @value 20 Roll 270°
+ * @value 21 Roll 270°, Yaw 45°
+ * @value 22 Roll 270°, Yaw 90°
+ * @value 23 Roll 270°, Yaw 135°
+ * @value 24 Pitch 90°
+ * @value 25 Pitch 270°
+ *
+ * @min -1
+ * @max 30
+ * @group Sensor Calibration
+ */
+PARAM_DEFINE_INT32(CAL_MAG3_ROT, -1);
+
+/**
+ * Magnetometer X-axis offset
+ *
+ * @min -500.0
+ * @max 500.0
+ * @group Sensor Calibration
+ */
+PARAM_DEFINE_FLOAT(CAL_MAG3_XOFF, 0.0f);
+
+/**
+ * Magnetometer Y-axis offset
+ *
+ * @min -500.0
+ * @max 500.0
+ * @group Sensor Calibration
+ */
+PARAM_DEFINE_FLOAT(CAL_MAG3_YOFF, 0.0f);
+
+/**
+ * Magnetometer Z-axis offset
+ *
+ * @min -500.0
+ * @max 500.0
+ * @group Sensor Calibration
+ */
+PARAM_DEFINE_FLOAT(CAL_MAG3_ZOFF, 0.0f);
+
+/**
+ * Magnetometer X-axis scaling factor
+ *
+ * @group Sensor Calibration
+ */
+PARAM_DEFINE_FLOAT(CAL_MAG3_XSCALE, 1.0f);
+
+/**
+ * Magnetometer Y-axis scaling factor
+ *
+ * @group Sensor Calibration
+ */
+PARAM_DEFINE_FLOAT(CAL_MAG3_YSCALE, 1.0f);
+
+/**
+ * Magnetometer Z-axis scaling factor
+ *
+ * @group Sensor Calibration
+ */
+PARAM_DEFINE_FLOAT(CAL_MAG3_ZSCALE, 1.0f);
+
+
+/**
  * Primary accel ID
  *
  * @group Sensor Calibration
@@ -883,6 +980,16 @@ PARAM_DEFINE_INT32(SENS_EXT_MAG_ROT, 0);
  * @group Sensor Calibration
  */
 PARAM_DEFINE_INT32(SENS_EXT_MAG, 0);
+
+/**
+ * Threshold (of RMS) to warn about high vibration levels
+ *
+ * @group Sensor Calibration
+ * @min 0.01
+ * @max 10
+ * @decimal 2
+ */
+PARAM_DEFINE_FLOAT(ATT_VIBE_THRESH, 0.2f);
 
 
 /**
@@ -2600,6 +2707,63 @@ PARAM_DEFINE_INT32(RC_MAP_TRANS_SW, 0);
  * @value 18 Channel 18
  */
 PARAM_DEFINE_INT32(RC_MAP_GEAR_SW, 0);
+
+/**
+ * Stabilize switch channel mapping.
+ *
+ * @min 0
+ * @max 18
+ * @group Radio Switches
+ * @value 0 Unassigned
+ * @value 1 Channel 1
+ * @value 2 Channel 2
+ * @value 3 Channel 3
+ * @value 4 Channel 4
+ * @value 5 Channel 5
+ * @value 6 Channel 6
+ * @value 7 Channel 7
+ * @value 8 Channel 8
+ * @value 9 Channel 9
+ * @value 10 Channel 10
+ * @value 11 Channel 11
+ * @value 12 Channel 12
+ * @value 13 Channel 13
+ * @value 14 Channel 14
+ * @value 15 Channel 15
+ * @value 16 Channel 16
+ * @value 17 Channel 17
+ * @value 18 Channel 18
+ */
+PARAM_DEFINE_INT32(RC_MAP_STAB_SW, 0);
+
+/**
+ * Manual switch channel mapping.
+ *
+ * @min 0
+ * @max 18
+ * @group Radio Switches
+ * @value 0 Unassigned
+ * @value 1 Channel 1
+ * @value 2 Channel 2
+ * @value 3 Channel 3
+ * @value 4 Channel 4
+ * @value 5 Channel 5
+ * @value 6 Channel 6
+ * @value 7 Channel 7
+ * @value 8 Channel 8
+ * @value 9 Channel 9
+ * @value 10 Channel 10
+ * @value 11 Channel 11
+ * @value 12 Channel 12
+ * @value 13 Channel 13
+ * @value 14 Channel 14
+ * @value 15 Channel 15
+ * @value 16 Channel 16
+ * @value 17 Channel 17
+ * @value 18 Channel 18
+ */
+PARAM_DEFINE_INT32(RC_MAP_MAN_SW, 0);
+
 /**
  * AUX1 Passthrough RC Channel
  *
@@ -3069,6 +3233,42 @@ PARAM_DEFINE_FLOAT(RC_TRANS_TH, 0.25f);
 PARAM_DEFINE_FLOAT(RC_GEAR_TH, 0.25f);
 
 /**
+ * Threshold for the stabilize switch.
+ *
+ * 0-1 indicate where in the full channel range the threshold sits
+ * 		0 : min
+ * 		1 : max
+ * sign indicates polarity of comparison
+ * 		positive : true when channel>th
+ * 		negative : true when channel<th
+ *
+ * @min -1
+ * @max 1
+ * @group Radio Switches
+ *
+ *
+ */
+PARAM_DEFINE_FLOAT(RC_STAB_TH, 0.5f);
+
+/**
+ * Threshold for the manual switch.
+ *
+ * 0-1 indicate where in the full channel range the threshold sits
+ * 		0 : min
+ * 		1 : max
+ * sign indicates polarity of comparison
+ * 		positive : true when channel>th
+ * 		negative : true when channel<th
+ *
+ * @min -1
+ * @max 1
+ * @group Radio Switches
+ *
+ *
+ */
+PARAM_DEFINE_FLOAT(RC_MAN_TH, 0.5f);
+
+/**
  * PWM input channel that provides RSSI.
  *
  * 0: do not read RSSI from input channel
@@ -3127,12 +3327,15 @@ PARAM_DEFINE_INT32(RC_RSSI_PWM_MAX, 1000);
 PARAM_DEFINE_INT32(RC_RSSI_PWM_MIN, 2000);
 
 /**
- * Lidar-Lite (LL40LS) PWM
+ * Lidar-Lite (LL40LS)
  *
  * @reboot_required true
- *
- * @boolean
+ * @min 0
+ * @max 2
  * @group Sensor Enable
+ * @value 0 Disabled
+ * @value 1 PWM
+ * @value 2 I2C
  */
 PARAM_DEFINE_INT32(SENS_EN_LL40LS, 0);
 
@@ -3203,6 +3406,8 @@ PARAM_DEFINE_INT32(SENS_EN_THERMAL, -1);
  * REBOOT IN ORDER TO APPLY THE CHANGES.
  *
  * Set to 400 for industry default or 1000 for high frequency ESCs.
+ *
+ * Set to 0 for Oneshot125.
  *
  * @reboot_required true
  *

@@ -93,6 +93,8 @@ int initialize_parameter_handles(ParameterHandles &parameter_handles)
 	parameter_handles.rc_map_arm_sw = param_find("RC_MAP_ARM_SW");
 	parameter_handles.rc_map_trans_sw = param_find("RC_MAP_TRANS_SW");
 	parameter_handles.rc_map_gear_sw = param_find("RC_MAP_GEAR_SW");
+	parameter_handles.rc_map_stab_sw = param_find("RC_MAP_STAB_SW");
+	parameter_handles.rc_map_man_sw = param_find("RC_MAP_MAN_SW");
 
 	parameter_handles.rc_map_aux1 = param_find("RC_MAP_AUX1");
 	parameter_handles.rc_map_aux2 = param_find("RC_MAP_AUX2");
@@ -124,6 +126,8 @@ int initialize_parameter_handles(ParameterHandles &parameter_handles)
 	parameter_handles.rc_armswitch_th = param_find("RC_ARMSWITCH_TH");
 	parameter_handles.rc_trans_th = param_find("RC_TRANS_TH");
 	parameter_handles.rc_gear_th = param_find("RC_GEAR_TH");
+	parameter_handles.rc_stab_th = param_find("RC_STAB_TH");
+	parameter_handles.rc_man_th = param_find("RC_MAN_TH");
 
 	/* RC low pass filter configuration */
 	parameter_handles.rc_flt_smp_rate = param_find("RC_FLT_SMP_RATE");
@@ -157,6 +161,8 @@ int initialize_parameter_handles(ParameterHandles &parameter_handles)
 	// We do a param_find here to force them into the list.
 	(void)param_find("RC_CHAN_CNT");
 	(void)param_find("RC_TH_USER");
+	(void)param_find("CAL_ACC0_ID");
+	(void)param_find("CAL_GYRO0_ID");
 	(void)param_find("CAL_MAG0_ID");
 	(void)param_find("CAL_MAG1_ID");
 	(void)param_find("CAL_MAG2_ID");
@@ -339,6 +345,14 @@ int update_parameters(const ParameterHandles &parameter_handles, Parameters &par
 		PX4_WARN("%s", paramerr);
 	}
 
+	if (param_get(parameter_handles.rc_map_stab_sw, &(parameters.rc_map_stab_sw)) != OK) {
+		warnx("%s", paramerr);
+	}
+
+	if (param_get(parameter_handles.rc_map_man_sw, &(parameters.rc_map_man_sw)) != OK) {
+		warnx("%s", paramerr);
+	}
+
 	param_get(parameter_handles.rc_map_aux1, &(parameters.rc_map_aux1));
 	param_get(parameter_handles.rc_map_aux2, &(parameters.rc_map_aux2));
 	param_get(parameter_handles.rc_map_aux3, &(parameters.rc_map_aux3));
@@ -354,40 +368,46 @@ int update_parameters(const ParameterHandles &parameter_handles, Parameters &par
 	param_get(parameter_handles.rc_fails_thr, &(parameters.rc_fails_thr));
 	param_get(parameter_handles.rc_assist_th, &(parameters.rc_assist_th));
 	parameters.rc_assist_inv = (parameters.rc_assist_th < 0);
-	parameters.rc_assist_th = fabs(parameters.rc_assist_th);
+	parameters.rc_assist_th = fabsf(parameters.rc_assist_th);
 	param_get(parameter_handles.rc_auto_th, &(parameters.rc_auto_th));
 	parameters.rc_auto_inv = (parameters.rc_auto_th < 0);
-	parameters.rc_auto_th = fabs(parameters.rc_auto_th);
+	parameters.rc_auto_th = fabsf(parameters.rc_auto_th);
 	param_get(parameter_handles.rc_rattitude_th, &(parameters.rc_rattitude_th));
 	parameters.rc_rattitude_inv = (parameters.rc_rattitude_th < 0);
-	parameters.rc_rattitude_th = fabs(parameters.rc_rattitude_th);
+	parameters.rc_rattitude_th = fabsf(parameters.rc_rattitude_th);
 	param_get(parameter_handles.rc_posctl_th, &(parameters.rc_posctl_th));
 	parameters.rc_posctl_inv = (parameters.rc_posctl_th < 0);
-	parameters.rc_posctl_th = fabs(parameters.rc_posctl_th);
+	parameters.rc_posctl_th = fabsf(parameters.rc_posctl_th);
 	param_get(parameter_handles.rc_return_th, &(parameters.rc_return_th));
 	parameters.rc_return_inv = (parameters.rc_return_th < 0);
-	parameters.rc_return_th = fabs(parameters.rc_return_th);
+	parameters.rc_return_th = fabsf(parameters.rc_return_th);
 	param_get(parameter_handles.rc_loiter_th, &(parameters.rc_loiter_th));
 	parameters.rc_loiter_inv = (parameters.rc_loiter_th < 0);
-	parameters.rc_loiter_th = fabs(parameters.rc_loiter_th);
+	parameters.rc_loiter_th = fabsf(parameters.rc_loiter_th);
 	param_get(parameter_handles.rc_acro_th, &(parameters.rc_acro_th));
 	parameters.rc_acro_inv = (parameters.rc_acro_th < 0);
-	parameters.rc_acro_th = fabs(parameters.rc_acro_th);
+	parameters.rc_acro_th = fabsf(parameters.rc_acro_th);
 	param_get(parameter_handles.rc_offboard_th, &(parameters.rc_offboard_th));
 	parameters.rc_offboard_inv = (parameters.rc_offboard_th < 0);
-	parameters.rc_offboard_th = fabs(parameters.rc_offboard_th);
+	parameters.rc_offboard_th = fabsf(parameters.rc_offboard_th);
 	param_get(parameter_handles.rc_killswitch_th, &(parameters.rc_killswitch_th));
 	parameters.rc_killswitch_inv = (parameters.rc_killswitch_th < 0);
-	parameters.rc_killswitch_th = fabs(parameters.rc_killswitch_th);
+	parameters.rc_killswitch_th = fabsf(parameters.rc_killswitch_th);
 	param_get(parameter_handles.rc_armswitch_th, &(parameters.rc_armswitch_th));
 	parameters.rc_armswitch_inv = (parameters.rc_armswitch_th < 0);
-	parameters.rc_armswitch_th = fabs(parameters.rc_armswitch_th);
+	parameters.rc_armswitch_th = fabsf(parameters.rc_armswitch_th);
 	param_get(parameter_handles.rc_trans_th, &(parameters.rc_trans_th));
 	parameters.rc_trans_inv = (parameters.rc_trans_th < 0);
-	parameters.rc_trans_th = fabs(parameters.rc_trans_th);
+	parameters.rc_trans_th = fabsf(parameters.rc_trans_th);
 	param_get(parameter_handles.rc_gear_th, &(parameters.rc_gear_th));
 	parameters.rc_gear_inv = (parameters.rc_gear_th < 0);
-	parameters.rc_gear_th = fabs(parameters.rc_gear_th);
+	parameters.rc_gear_th = fabsf(parameters.rc_gear_th);
+	param_get(parameter_handles.rc_stab_th, &(parameters.rc_stab_th));
+	parameters.rc_stab_inv = (parameters.rc_stab_th < 0);
+	parameters.rc_stab_th = fabsf(parameters.rc_stab_th);
+	param_get(parameter_handles.rc_man_th, &(parameters.rc_man_th));
+	parameters.rc_man_inv = (parameters.rc_man_th < 0);
+	parameters.rc_man_th = fabsf(parameters.rc_man_th);
 
 	param_get(parameter_handles.rc_flt_smp_rate, &(parameters.rc_flt_smp_rate));
 	parameters.rc_flt_smp_rate = math::max(1.0f, parameters.rc_flt_smp_rate);

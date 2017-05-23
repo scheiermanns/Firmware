@@ -80,16 +80,9 @@ stat_file(const char *file, time_t *date = nullptr, uint32_t *size = nullptr)
 }
 
 //-------------------------------------------------------------------
-MavlinkLogHandler *
-MavlinkLogHandler::new_instance(Mavlink *mavlink)
-{
-	return new MavlinkLogHandler(mavlink);
-}
-
-//-------------------------------------------------------------------
 MavlinkLogHandler::MavlinkLogHandler(Mavlink *mavlink)
-	: MavlinkStream(mavlink)
-	, _pLogHandlerHelper(nullptr)
+	: _pLogHandlerHelper(nullptr),
+	  _mavlink(mavlink)
 {
 
 }
@@ -118,20 +111,6 @@ MavlinkLogHandler::handle_message(const mavlink_message_t *msg)
 }
 
 //-------------------------------------------------------------------
-const char *
-MavlinkLogHandler::get_name() const
-{
-	return "MAVLINK_LOG_HANDLER";
-}
-
-//-------------------------------------------------------------------
-uint16_t
-MavlinkLogHandler::get_id()
-{
-	return MAVLINK_MSG_ID_LOG_ENTRY;
-}
-
-//-------------------------------------------------------------------
 unsigned
 MavlinkLogHandler::get_size()
 {
@@ -154,7 +133,7 @@ void
 MavlinkLogHandler::send(const hrt_abstime /*t*/)
 {
 	//-- An arbitrary count of max bytes in one go (one of the two below but never both)
-#define MAX_BYTES_SEND 64 * 1024
+#define MAX_BYTES_SEND 256 * 1024
 	size_t count = 0;
 
 	//-- Log Entries
@@ -237,8 +216,14 @@ MavlinkLogHandler::_log_request_data(const mavlink_message_t *msg)
 		_pLogHandlerHelper->current_log_filename[0] = 0;
 		_pLogHandlerHelper->current_log_index = request.id;
 		uint32_t time_utc = 0;
-		_pLogHandlerHelper->get_entry(_pLogHandlerHelper->current_log_index, _pLogHandlerHelper->current_log_size, time_utc,
-					      _pLogHandlerHelper->current_log_filename);
+
+		if (!_pLogHandlerHelper->get_entry(_pLogHandlerHelper->current_log_index, _pLogHandlerHelper->current_log_size,
+						   time_utc,
+						   _pLogHandlerHelper->current_log_filename, sizeof(_pLogHandlerHelper->current_log_filename))) {
+			PX4LOG_WARN("LogListHelper::get_entry failed.\n");
+			return;
+		}
+
 		_pLogHandlerHelper->open_for_transmit();
 	}
 
@@ -393,7 +378,7 @@ LogListHelper::~LogListHelper()
 
 //-------------------------------------------------------------------
 bool
-LogListHelper::get_entry(int idx, uint32_t &size, uint32_t &date, char *filename)
+LogListHelper::get_entry(int idx, uint32_t &size, uint32_t &date, char *filename, int filename_len)
 {
 	//-- Find log file in log list file created during init()
 	size = 0;
@@ -410,11 +395,12 @@ LogListHelper::get_entry(int idx, uint32_t &size, uint32_t &date, char *filename
 		while (fgets(line, sizeof(line), f)) {
 			//-- Found our "index"
 			if (count++ == idx) {
-				char file[128];
+				char file[160];
 
 				if (sscanf(line, "%u %u %s", &date, &size, file) == 3) {
-					if (filename) {
-						strcpy(filename, file);
+					if (filename && filename_len > 0) {
+						strncpy(filename, file, filename_len);
+						filename[filename_len - 1] = 0; // ensure null-termination
 					}
 
 					result = true;
