@@ -89,29 +89,7 @@
 #define GPIO_DRDY_PORTC_PIN14        (GPIO_INPUT|GPIO_FLOAT|GPIO_EXTI|GPIO_PORTC|GPIO_PIN14)
 #define GPIO_DRDY_PORTE_PIN12        (GPIO_INPUT|GPIO_FLOAT|GPIO_EXTI|GPIO_PORTE|GPIO_PIN12)
 
-<<<<<<< HEAD
-/* The BMI160 sensor replaces the MPU9250 on some boards. Only one is actually present and connected
- * to the second GPIO pin on port C. The wrong driver will fail during start becaus of an incorrect WHO_AM_I register.*/
-#define GPIO_SPI1_CS_PORTC_PIN2		(GPIO_OUTPUT|GPIO_PUSHPULL|GPIO_SPEED_2MHz|GPIO_OUTPUT_SET|GPIO_PORTC|GPIO_PIN2)
-=======
->>>>>>> upstream/master
-
-
-<<<<<<< HEAD
-/* The BMI055 acceleration sensor replaces the ICM20608G on some boards. Only one is actually present and connected
- * to the second GPIO pin on port C. The wrong driver will fail during start becaus of an incorrect WHO_AM_I register.*/
-#define GPIO_SPI1_CS_PORTC_PIN15  (GPIO_OUTPUT|GPIO_PUSHPULL|GPIO_SPEED_2MHz|GPIO_OUTPUT_SET|GPIO_PORTC|GPIO_PIN15)
-
-/* The BMI055 gyroscope sensor replaces the LIS3MDL, HMC5983 on some boards. Only one is actually present and connected
- * to the second GPIO pin on port E. The wrong driver will fail during start becaus of an incorrect WHO_AM_I register.*/
-#define GPIO_SPI1_CS_PORTE_PIN15  (GPIO_OUTPUT|GPIO_PUSHPULL|GPIO_SPEED_2MHz|GPIO_OUTPUT_SET|GPIO_PORTE|GPIO_PIN15)
-
-
-/*  Define the Ready interrupts */
-=======
 /*  Define the Chip Selects for SPI2 */
->>>>>>> upstream/master
-
 #define GPIO_SPI2_CS_MS5611          (GPIO_OUTPUT|GPIO_PUSHPULL|GPIO_SPEED_2MHz|GPIO_OUTPUT_SET|GPIO_PORTD|GPIO_PIN7)
 #define GPIO_SPI2_CS_FRAM            (GPIO_OUTPUT|GPIO_PUSHPULL|GPIO_SPEED_2MHz|GPIO_OUTPUT_SET|GPIO_PORTD|GPIO_PIN10)
 
@@ -125,22 +103,6 @@
 
 #define _PIN_OFF(def) (((def) & (GPIO_PORT_MASK | GPIO_PIN_MASK)) | (GPIO_INPUT|GPIO_PULLDOWN|GPIO_SPEED_2MHz))
 
-<<<<<<< HEAD
-#define GPIO_SPI_CS_OFF_MPU9250		_PIN_OFF(GPIO_SPI_CS_MPU9250)
-#define GPIO_SPI_CS_OFF_HMC5983		_PIN_OFF(GPIO_SPI_CS_HMC5983)
-#define GPIO_SPI_CS_OFF_LIS3MDL		_PIN_OFF(GPIO_SPI_CS_LIS3MDL)
-#define GPIO_SPI_CS_OFF_MS5611		_PIN_OFF(GPIO_SPI_CS_MS5611)
-#define GPIO_SPI_CS_OFF_ICM_2060X 	_PIN_OFF(GPIO_SPI_CS_ICM_2060X)
-
-#define GPIO_SPI1_CS_OFF_PORTC_PIN2 _PIN_OFF(GPIO_SPI1_CS_PORTC_PIN2)
-#define GPIO_SPI1_CS_OFF_PORTC_PIN15 _PIN_OFF(GPIO_SPI1_CS_PORTC_PIN15)
-#define GPIO_SPI1_CS_OFF_PORTE_PIN15 _PIN_OFF(GPIO_SPI1_CS_PORTE_PIN15)
-
-#define GPIO_DRDY_OFF_MPU9250		_PIN_OFF(GPIO_DRDY_MPU9250)
-#define GPIO_DRDY_OFF_HMC5983		_PIN_OFF(GPIO_DRDY_HMC5983)
-#define GPIO_DRDY_OFF_ICM_2060X		_PIN_OFF(GPIO_DRDY_ICM_2060X)
-
-=======
 /* SPI 1 bus off */
 
 #define GPIO_SPI1_SCK_OFF            _PIN_OFF(GPIO_SPI1_SCK)
@@ -148,8 +110,6 @@
 #define GPIO_SPI1_MOSI_OFF           _PIN_OFF(GPIO_SPI1_MOSI)
 
 /* SPI 1 CS's  off */
->>>>>>> upstream/master
-
 #define GPIO_SPI1_CS_OFF_PORTC_PIN2  _PIN_OFF(GPIO_SPI1_CS_PORTC_PIN2)
 #define GPIO_SPI1_CS_OFF_PORTC_PIN15 _PIN_OFF(GPIO_SPI1_CS_PORTC_PIN15)
 #define GPIO_SPI1_CS_OFF_PORTE_PIN15 _PIN_OFF(GPIO_SPI1_CS_PORTE_PIN15)
@@ -170,21 +130,6 @@
 #define PX4_SPI_BUS_BARO             PX4_SPI_BUS_RAMTRON
 
 /* Use these in place of the spi_dev_e enumeration to select a specific SPI device on SPI1 */
-<<<<<<< HEAD
-#define PX4_SPIDEV_GYRO			1
-#define PX4_SPIDEV_ACCEL_MAG		2
-#define PX4_SPIDEV_MPU			4
-#define PX4_SPIDEV_HMC			5
-#define PX4_SPIDEV_ICM			6
-#define PX4_SPIDEV_LIS			7
-#define PX4_SPIDEV_BMI			8
-#define PX4_SPIDEV_BMA			9
-#define PX4_SPIDEV_ICM_20608		10
-#define PX4_SPIDEV_ICM_20602		11
-#define PX4_SPIDEV_BMI055_ACC   	12
-#define PX4_SPIDEV_BMI055_GYR   	13
-
-=======
 #define PX4_SPIDEV_GYRO              1
 #define PX4_SPIDEV_ACCEL_MAG         2
 #define PX4_SPIDEV_MPU               4
@@ -197,7 +142,6 @@
 #define PX4_SPIDEV_ICM_20602         11
 #define PX4_SPIDEV_BMI055_ACC        12
 #define PX4_SPIDEV_BMI055_GYR        13
->>>>>>> upstream/master
 
 /* onboard MS5611 and FRAM are both on bus SPI2
  * spi_dev_e:SPIDEV_FLASH has the value 2 and is used in the NuttX ramtron driver
@@ -209,34 +153,20 @@
 #endif
 
 /* I2C busses */
-<<<<<<< HEAD
 #define PX4_I2C_BUS_EXPANSION	1
 #define PX4_I2C_BUS_LED			PX4_I2C_BUS_EXPANSION
 #define PX4_I2C_BUS_BMM150 		PX4_I2C_BUS_EXPANSION
 #define PX4_I2C_BUS_BMP280 		PX4_I2C_BUS_EXPANSION
-=======
-#define PX4_I2C_BUS_EXPANSION        1
-#define PX4_I2C_BUS_LED              PX4_I2C_BUS_EXPANSION
-#define PX4_I2C_BUS_BMM150           PX4_I2C_BUS_EXPANSION
->>>>>>> upstream/master
 
 /* Devices on the external bus.
  *
  * Note that these are unshifted addresses.
  */
-<<<<<<< HEAD
-#define PX4_I2C_OBDEV_LED	0x55
-#define PX4_I2C_OBDEV_HMC5883	0x1e
-#define PX4_I2C_OBDEV_LIS3MDL	0x1e
-#define PX4_I2C_OBDEV_BMM150	0x10
-#define PX4_I2C_OBDEV_BMP280	0x76
-=======
 #define PX4_I2C_OBDEV_LED            0x55
 #define PX4_I2C_OBDEV_HMC5883        0x1e
 #define PX4_I2C_OBDEV_LIS3MDL        0x1e
 #define PX4_I2C_OBDEV_BMM150         0x10
 #define PX4_I2C_OBDEV_BMP280         0x76
->>>>>>> upstream/master
 
 /*
  * ADC channels
