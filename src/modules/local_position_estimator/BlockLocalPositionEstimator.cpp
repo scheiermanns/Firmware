@@ -148,10 +148,7 @@ BlockLocalPositionEstimator::BlockLocalPositionEstimator() :
 	// masks
 	_sensorTimeout(255),
 	_sensorFault(0),
-	_estimatorInitialized(0),
-
-	// kf matrices
-	_x(), _u(), _P(), _R_att(), _eul()
+	_estimatorInitialized(0)
 {
 	// assign distance subs to array
 	_dist_subs[0] = &_sub_dist0;
@@ -282,7 +279,6 @@ void BlockLocalPositionEstimator::update()
 	_lastArmedState = armedState;
 
 	// see which updates are available
-	bool flowUpdated = _sub_flow.updated();
 	bool paramsUpdated = _sub_param_update.updated();
 	bool baroUpdated = false;
 
@@ -300,6 +296,7 @@ void BlockLocalPositionEstimator::update()
 		}
 	}
 
+	bool flowUpdated = (_fusion.get() & FUSE_FLOW) && _sub_flow.updated();
 	bool gpsUpdated = (_fusion.get() & FUSE_GPS) && _sub_gps.updated();
 	bool visionUpdated = (_fusion.get() & FUSE_VIS_POS) && _sub_vision_pos.updated();
 	bool mocapUpdated = _sub_mocap.updated();
@@ -563,11 +560,7 @@ bool BlockLocalPositionEstimator::landed()
 
 	bool disarmed_not_falling = (!_sub_armed.get().armed) && (!_sub_land.get().freefall);
 
-	if (!(_sub_land.get().landed || disarmed_not_falling)) {
-		return false;
-	}
-
-	return true;
+	return _sub_land.get().landed || disarmed_not_falling;
 }
 
 void BlockLocalPositionEstimator::publishLocalPos()

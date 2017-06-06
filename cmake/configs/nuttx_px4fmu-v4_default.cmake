@@ -30,6 +30,7 @@ set(config_module_list
 	drivers/trone
 	drivers/gps
 	drivers/pwm_out_sim
+	drivers/pca9685
 	drivers/hott
 	drivers/hott/hott_telemetry
 	drivers/hott/hott_sensors
@@ -85,7 +86,7 @@ set(config_module_list
 	drivers/test_ppm
 	modules/commander/commander_tests
 	modules/mc_pos_control/mc_pos_control_tests
-	modules/controllib_test
+	lib/controllib/controllib_test
 	modules/mavlink/mavlink_tests
 	modules/unit_test
 	modules/uORB/uORB_tests

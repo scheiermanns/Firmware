@@ -1,6 +1,6 @@
 ############################################################################
 #
-#   Copyright (c) 2015 PX4 Development Team. All rights reserved.
+#   Copyright (c) 2016-2017 PX4 Development Team. All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
 # modification, are permitted provided that the following conditions
@@ -31,13 +31,13 @@
 #
 ############################################################################
 px4_add_module(
-	MODULE modules__controllib_test
-	MAIN controllib_test
+	MODULE drivers__ocpoc_sbus_rc_in
+	MAIN ocpoc_sbus_rc_in
+	STACK_MAIN 1200
 	COMPILE_FLAGS
 	SRCS
-		controllib_test_main.cpp
+		ocpoc_sbus_rc_in.cpp
 	DEPENDS
 		platforms__common
 	)
-
 # vim: set noet ft=cmake fenc=utf-8 ff=unix :
