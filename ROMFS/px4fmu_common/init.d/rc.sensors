@@ -220,11 +220,7 @@ then
 	if bmi055 -A start
 	then
 	fi
-<<<<<<< HEAD
-	
-=======
 
->>>>>>> upstream/master
 	# Internal SPI bus BMI055_GYR
 	if bmi055 -G start
 	then
@@ -234,11 +230,7 @@ then
 	if bmm150 -R 2 start
 	then
 	fi
-<<<<<<< HEAD
-	
-=======
 
->>>>>>> upstream/master
 	# expansion i2c used for BMP280
 	if bmp280 -I start
 	then
