@@ -30,19 +30,14 @@
 # POSSIBILITY OF SUCH DAMAGE.
 #
 ############################################################################
-
-include_directories(${CMAKE_CURRENT_BINARY_DIR})
-
-px4_generate_parameters_source(OUT param_files
-	XML ${PX4_BINARY_DIR}/parameters.xml
-	MODULES ${config_module_list}
-	DEPS xml_gen
-	)
-
 px4_add_module(
-	MODULE modules__param
+	MODULE drivers__ms5525_airspeed
+	MAIN ms5525_airspeed
+	STACK_MAIN 1200
 	COMPILE_FLAGS
-	SRCS ${param_files}
+	SRCS
+		MS5525.cpp
+		MS5525_main.cpp
 	DEPENDS
 		platforms__common
 	)

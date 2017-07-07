@@ -928,7 +928,7 @@ bool handle_command(struct vehicle_status_s *status_local, const struct safety_s
 				transition_result_t arming_res = arm_disarm(cmd_arms, &mavlink_log_pub, "arm/disarm component command");
 
 				if (arming_res == TRANSITION_DENIED) {
-					mavlink_log_critical(&mavlink_log_pub, "REJECTING component arm cmd");
+					mavlink_log_critical(&mavlink_log_pub, "Arming not possible in this state");
 					cmd_result = vehicle_command_s::VEHICLE_CMD_RESULT_TEMPORARILY_REJECTED;
 
 				} else {
@@ -945,38 +945,6 @@ bool handle_command(struct vehicle_status_s *status_local, const struct safety_s
 		}
 		break;
 
-	case vehicle_command_s::VEHICLE_CMD_OVERRIDE_GOTO: {
-			// TODO listen vehicle_command topic directly from navigator (?)
-
-			// Increase by 0.5f and rely on the integer cast
-			// implicit floor(). This is the *safest* way to
-			// convert from floats representing small ints to actual ints.
-			unsigned int mav_goto = (cmd->param1 + 0.5f);
-
-			if (mav_goto == 0) {	// MAV_GOTO_DO_HOLD
-				status_local->nav_state = vehicle_status_s::NAVIGATION_STATE_AUTO_LOITER;
-				mavlink_log_critical(&mavlink_log_pub, "Pause mission cmd");
-				cmd_result = vehicle_command_s::VEHICLE_CMD_RESULT_ACCEPTED;
-
-			} else if (mav_goto == 1) {	// MAV_GOTO_DO_CONTINUE
-				status_local->nav_state = vehicle_status_s::NAVIGATION_STATE_AUTO_MISSION;
-				mavlink_log_critical(&mavlink_log_pub, "Continue mission cmd");
-				cmd_result = vehicle_command_s::VEHICLE_CMD_RESULT_ACCEPTED;
-
-			} else {
-				mavlink_log_critical(&mavlink_log_pub, "REJ CMD: %.1f %.1f %.1f %.1f %.1f %.1f %.1f",
-						     (double)cmd->param1,
-						     (double)cmd->param2,
-						     (double)cmd->param3,
-						     (double)cmd->param4,
-						     (double)cmd->param5,
-						     (double)cmd->param6,
-						     (double)cmd->param7);
-			}
-		}
-		break;
-
-		/* Flight termination */
 	case vehicle_command_s::VEHICLE_CMD_DO_FLIGHTTERMINATION: {
 			if (cmd->param1 > 1.5f) {
 				armed_local->lockdown = true;
@@ -2116,7 +2084,6 @@ int commander_thread_main(int argc, char *argv[])
 										  arm_without_gps,
 										  arm_mission_required,
 										  hrt_elapsed_time(&commander_boot_timestamp))) {
-					mavlink_log_info(&mavlink_log_pub, "DISARMED by safety switch");
 					arming_state_changed = true;
 				}
 			}
@@ -2489,7 +2456,9 @@ int commander_thread_main(int argc, char *argv[])
 			} else if (!status_flags.gps_failure) {
 				status_flags.gps_failure = true;
 				status_changed = true;
-				mavlink_log_critical(&mavlink_log_pub, "GPS fix lost");
+				if (status.arming_state == vehicle_status_s::ARMING_STATE_ARMED) {
+					mavlink_log_critical(&mavlink_log_pub, "GPS fix lost");
+				}
 			}
 
 		}
@@ -2799,13 +2768,6 @@ int commander_thread_main(int argc, char *argv[])
 			_last_sp_man_arm_switch = sp_man.arm_switch;
 
 			if (arming_ret == TRANSITION_CHANGED) {
-				if (status.arming_state == vehicle_status_s::ARMING_STATE_ARMED) {
-					mavlink_log_info(&mavlink_log_pub, "ARMED by RC");
-
-				} else {
-					mavlink_log_info(&mavlink_log_pub, "DISARMED by RC");
-				}
-
 				arming_state_changed = true;
 
 			} else if (arming_ret == TRANSITION_DENIED) {
@@ -2832,7 +2794,7 @@ int commander_thread_main(int argc, char *argv[])
 
 			} else if (main_res == TRANSITION_DENIED) {
 				/* DENIED here indicates bug in the commander */
-				mavlink_log_critical(&mavlink_log_pub, "main state transition denied");
+				mavlink_log_critical(&mavlink_log_pub, "Switching to this mode is currently not possible");
 			}
 
 			/* check throttle kill switch */
@@ -3471,7 +3433,6 @@ set_main_state_rc(struct vehicle_status_s *status_local, vehicle_global_position
 
 	/* RTL switch overrides main switch */
 	if (sp_man.return_switch == manual_control_setpoint_s::SWITCH_POS_ON) {
-		warnx("RTL switch changed and ON!");
 		res = main_state_transition(status_local, commander_state_s::MAIN_STATE_AUTO_RTL, main_state_prev, &status_flags, &internal_state);
 
 		if (res == TRANSITION_DENIED) {

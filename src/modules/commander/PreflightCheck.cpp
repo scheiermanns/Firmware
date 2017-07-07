@@ -383,9 +383,15 @@ static bool airspeedCheck(orb_advert_t *mavlink_log_pub, bool optional, bool rep
 		goto out;
 	}
 
-	if (fabsf(airspeed.confidence) < 0.95f) {
+	/*
+	 * Check if voter thinks the confidence is low. High-end sensors might have virtually zero noise
+	 * on the bench and trigger false positives of the voter. Therefore only fail this
+	 * for a pre-arm check, as then the cover is off and the natural airflow in the field
+	 * will ensure there is not zero noise.
+	 */
+	if (prearm && fabsf(airspeed.confidence) < 0.95f) {
 		if (report_fail) {
-			mavlink_log_critical(mavlink_log_pub, "PREFLIGHT FAIL: AIRSPEED SENSOR COMM ERROR");
+			mavlink_log_critical(mavlink_log_pub, "PREFLIGHT FAIL: AIRSPEED SENSOR STUCK");
 		}
 		success = false;
 		goto out;
@@ -405,7 +411,7 @@ static bool airspeedCheck(orb_advert_t *mavlink_log_pub, bool optional, bool rep
 
 	if (fabsf(airspeed.differential_pressure_filtered_pa) > 15.0f && !prearm) {
 		if (report_fail) {
-			mavlink_log_critical(mavlink_log_pub, "PREFLIGHT FAIL: HIGH AIRSPEED, CHECK CALIBRATION");
+			mavlink_log_critical(mavlink_log_pub, "PREFLIGHT FAIL: AIRSPEED CALIBRATION BAD OR PITOT UNCOVERED");
 		}
 		success = false;
 		goto out;
