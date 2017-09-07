@@ -385,20 +385,26 @@ int sdlog2_main(int argc, char *argv[])
 
 	if (!strncmp(argv[1], "on", 2)) {
 		struct vehicle_command_s cmd;
+
+		memset(&cmd, 0, sizeof(cmd));
 		cmd.command = VEHICLE_CMD_PREFLIGHT_STORAGE;
 		cmd.param1 = -1;
 		cmd.param2 = -1;
 		cmd.param3 = 1;
+		cmd.timestamp = hrt_absolute_time();
 		orb_advertise(ORB_ID(vehicle_command), &cmd);
 		return 0;
 	}
 
 	if (!strcmp(argv[1], "off")) {
 		struct vehicle_command_s cmd;
+
+		memset(&cmd, 0, sizeof(cmd));
 		cmd.command = VEHICLE_CMD_PREFLIGHT_STORAGE;
 		cmd.param1 = -1;
 		cmd.param2 = -1;
 		cmd.param3 = 2;
+		cmd.timestamp = hrt_absolute_time();
 		orb_advertise(ORB_ID(vehicle_command), &cmd);
 		return 0;
 	}

@@ -1,6 +1,6 @@
 #!nsh
 #
-# @name Intel Aero RTF
+# @name Intel Aero Ready to Fly Drone
 #
 # @board px4fmu-v1 exclude
 # @board px4fmu-v2 exclude
@@ -11,6 +11,8 @@
 #
 # @type Quadrotor x
 # @class Copter
+#
+# @maintainer Lucas de Marchi
 #
 
 sh /etc/init.d/rc.mc_defaults
@@ -76,5 +78,5 @@ set OUTPUT_MODE tap_esc
 set MIXER quad_x
 set USE_IO no
 
-param set SYS_COMPANION 460800
+param set SYS_COMPANION 921600
 set MAVLINK_COMPANION_DEVICE /dev/ttyS1
